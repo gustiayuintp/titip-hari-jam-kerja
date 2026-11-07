@@ -1,5 +1,5 @@
 // GANTI TEKS DI BAWAH INI DENGAN SPREADSHEET ID ANDA
-const SPREADSHEET_ID = '1Q9yZV5Rs89aCF93kEVJBPSawo4fxTJ8uj_B53qj2td0';
+const SPREADSHEET_ID = 'ID_GOOGLE_SHEETS_ANDA';
 
 // Konfigurasi data posko
 const POSKO_LIST = [
@@ -8,7 +8,7 @@ const POSKO_LIST = [
   { sheetName: "Petang", poskoName: "Petang", unitPagi: ["( HK ) 284"], unitSore: ["( JK ) 284"], isMultiUnit: false }
 ];
 
-// Set tanggal hari ini otomatis di input saat web dibuka
+// Set tanggal hari ini otomatis saat web dibuka
 document.addEventListener("DOMContentLoaded", () => {
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('inputTanggal').value = today;
@@ -22,10 +22,11 @@ async function loadAllPoskoData() {
   outputDiv.innerHTML = '<p class="status">Mengambil data posko...</p>';
 
   const selectedDateVal = document.getElementById('inputTanggal').value;
-  let formattedDate = "-";
+  let formattedDate = "";
   if (selectedDateVal) {
-    const parts = selectedDateVal.split('-');
-    formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+    const parts = selectedDateVal.split('-'); // Format YYYY-MM-DD dari HTML
+    // Buat beberapa opsi variasi format tanggal untuk pencocokan yang akurat
+    formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`; // Contoh: 10/11/2026
   }
 
   outputDiv.innerHTML = '';
@@ -35,36 +36,55 @@ async function loadAllPoskoData() {
   }
 }
 
-async function fetchPoskoData(posko, container, tanggalManual) {
-  // Menggunakan endpoint CSV publik yang lebih stabil
+async function fetchPoskoData(posko, container, targetDate) {
+  // Ambil data CSV dari Google Sheets
   const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(posko.sheetName)}`;
 
   try {
     const response = await fetch(url);
-    if (!response.ok) throw new Error('Network response was not ok');
+    if (!response.ok) throw new Error('Gagal mengambil data dari Google Sheets');
     
     const csvText = await response.text();
     const rows = parseCSV(csvText);
 
-    // Ambil data baris ke-2 (index 1), jika tidak ada ambil baris pertama
-    const row = rows.length > 1 ? rows[1] : (rows[0] || []);
+    if (rows.length <= 1) {
+      renderCard(container, posko.poskoName, `Posko ${posko.poskoName} tidak memiliki data.`);
+      return;
+    }
 
-    const tanggal = (tanggalManual && tanggalManual !== "--/") ? tanggalManual : (row[0] || '-');
-    const rawPagi = row[1] || '';
-    const rawSiang = row[2] || '';
+    // CARI BARIS YANG TANGGALNYA SAMA PERSIS DENGAN INPUT USER
+    // Menghindari penggunaan data dari tanggal/hari lain
+    let matchedRow = null;
+
+    for (let i = 1; i < rows.length; i++) {
+      const rowDate = rows[i][0] ? rows[i][0].trim() : '';
+      if (isSameDate(rowDate, targetDate)) {
+        matchedRow = rows[i];
+        break;
+      }
+    }
+
+    // JIKA TIDAK ADA DATA PADA TANGGAL TERSEBUT
+    if (!matchedRow) {
+      const emptyAnnouncement = `${posko.poskoName} titip shift ${targetDate}\n\n[ Tidak ada data shift untuk tanggal ini ]`;
+      renderCard(container, posko.poskoName, emptyAnnouncement);
+      return;
+    }
+
+    // JIKA TANGGAL DITEMUKAN, PROSES NAMA SHIFT
+    const rawPagi = matchedRow[1] || '';
+    const rawSiang = matchedRow[2] || '';
 
     const listPagi = rawPagi.split(',').map(n => n.trim()).filter(n => n !== '');
     const listSiang = rawSiang.split(',').map(n => n.trim()).filter(n => n !== '');
 
-    let teksPagi = listPagi.map((nama, idx) => {
-      const unit = posko.unitPagi[idx] || '';
-      return `- ${nama} ${unit}`.trim();
-    }).join('\n');
+    let teksPagi = listPagi.length > 0 
+      ? listPagi.map((nama, idx) => `- ${nama} ${posko.unitPagi[idx] || ''}`.trim()).join('\n')
+      : '- (Kosong)';
 
-    let teksSiang = listSiang.map((nama, idx) => {
-      const unit = posko.unitSore[idx] || '';
-      return `- ${nama} ${unit}`.trim();
-    }).join('\n');
+    let teksSiang = listSiang.length > 0 
+      ? listSiang.map((nama, idx) => `- ${nama} ${posko.unitSore[idx] || ''}`.trim()).join('\n')
+      : '- (Kosong)';
 
     let kalimatPagi, kalimatSore;
     const poskoLower = posko.poskoName.toLowerCase();
@@ -77,7 +97,7 @@ async function fetchPoskoData(posko, container, tanggalManual) {
       kalimatSore = `Silahkan nanti di titip namanya di unit ${poskoLower} shift sore`;
     }
 
-    const fullAnnouncement = `${posko.poskoName} titip shift ${tanggal}
+    const fullAnnouncement = `${posko.poskoName} titip shift ${targetDate}
 Shift pagi
 ${teksPagi}
 ${kalimatPagi}
@@ -94,11 +114,18 @@ ${kalimatSore}`;
   }
 }
 
-// Fungsi sederhana pemisah CSV
+// Fungsi bantu pencocokan tanggal fleksibel (misal 10/11/2026 vs 10-11-2026)
+function isSameDate(dateInSheet, targetDate) {
+  if (!dateInSheet || !targetDate) return false;
+  const cleanSheetDate = dateInSheet.replace(/[-.]/g, '/');
+  const cleanTargetDate = targetDate.replace(/[-.]/g, '/');
+  return cleanSheetDate === cleanTargetDate;
+}
+
+// Fungsi parser CSV
 function parseCSV(text) {
-  const lines = text.split('\n');
+  const lines = text.split(/\r?\n/);
   return lines.map(line => {
-    // Memisah berdasarkan koma yang tidak ada di dalam tanda kutip
     const regex = /(?:,|\n|^)("(?:(?:"")*[^"]*)*"|[^",\n]*)/g;
     const row = [];
     let match;
