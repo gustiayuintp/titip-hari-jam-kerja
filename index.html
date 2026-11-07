@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generator Pengumuman Shift Posko</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    body {
+      background-color: #f4f7f6;
+      padding: 15px;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 15px;
+      color: #2c3e50;
+      font-size: 22px;
+    }
+    .date-box {
+      margin-bottom: 20px;
+      background: #eef2f3;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .date-box label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 5px;
+      color: #34495e;
+    }
+    .date-box input {
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      width: 100%;
+      max-width: 250px;
+      text-align: center;
+    }
+    .btn-refresh {
+      width: 100%;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-refresh:active {
+      background-color: #2980b9;
+    }
+    .card {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 15px;
+      background-color: #fafafa;
+    }
+    .card h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+      color: #2c3e50;
+    }
+    .card pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: inherit;
+      background: #fff;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      margin-bottom: 10px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    .btn-copy {
+      background-color: #2ecc71;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      width: 100%;
+      font-size: 15px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-copy:active {
+      background-color: #27ae60;
+    }
+    .status {
+      text-align: center;
+      font-size: 14px;
+      color: #7f8c8d;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>Pengumuman Shift Posko</h2>
+
+    <!-- Kotak Pemilih Tanggal -->
+    <div class="date-box">
+      <label for="inputTanggal">Pilih Tanggal Pengiriman:</label>
+      <input type="date" id="inputTanggal">
+    </div>
+
+    <button class="btn-refresh" id="btnRefresh">🔄 Perbarui Data</button>
+
+    <div id="output">
+      <p class="status">Memuat data dari Google Sheets...</p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
